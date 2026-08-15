@@ -1,0 +1,19 @@
+{
+  "name": "ECSRFrameworkTests",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "Packages": {
+        "$className": "Folder",
+        "Matter": { "$path": "vendor/Matter/lib" }
+      },
+      "ECSR": { "$path": "src" }
+    },
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "FrameworkConformance": { "$path": "tests/FrameworkConformance.server.luau" }
+    }
+  }
+}
+

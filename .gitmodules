@@ -1,0 +1,3 @@
+[submodule "vendor/Matter"]
+	path = vendor/Matter
+	url = https://github.com/matter-ecs/matter.git

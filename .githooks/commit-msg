@@ -1,0 +1,48 @@
+#!/usr/bin/env sh
+set -eu
+
+message_file="$1"
+subject="$(sed -n '1{s/\r$//;p;}' "$message_file")"
+subject_pattern='^evolve\([a-z0-9][a-z0-9-]*\): X_t\[[^]]+\] -> X_t[+]1\[[^]]+\]$'
+
+fail() {
+    printf '%s\n' "State Evolution Commit Rule rejected this commit:" >&2
+    printf '  %s\n' "$1" >&2
+    printf '%s\n' "Expected: evolve(scope): X_t[before] -> X_t+1[after]" >&2
+    printf '%s\n' "Required ordered sections: X_t, C_i, ⊗, Φ, X_t+1, Verification" >&2
+    exit 1
+}
+
+if ! printf '%s\n' "$subject" | grep -Eq "$subject_pattern"; then
+    fail "the subject does not describe an X_t -> X_t+1 transition"
+fi
+
+if grep -Eq '<[^>]+>' "$message_file"; then
+    fail "template placeholders remain in the message"
+fi
+
+previous_line=0
+for section in 'X_t:' 'C_i:' '⊗:' 'Φ:' 'X_t+1:' 'Verification:'; do
+    section_line="$(awk -v target="$section" '{ sub(/\r$/, ""); if ($0 == target) { print NR; exit } }' "$message_file")"
+    if [ -z "$section_line" ]; then
+        fail "missing section: $section"
+    fi
+    if [ "$section_line" -le "$previous_line" ]; then
+        fail "section is out of state-evolution order: $section"
+    fi
+    previous_line="$section_line"
+done
+
+if ! awk '
+    { sub(/\r$/, "") }
+    $0 == "C_i:" { inside = 1; next }
+    $0 == "⊗:" { inside = 0 }
+    inside && $0 == "" { next }
+    inside && /^- C[0-9]+ \[(Components|Systems|Rules)\]: .+/ { count += 1; next }
+    inside { invalid = 1 }
+    END { exit !((count > 0) && (invalid == 0)) }
+' "$message_file"; then
+    fail "C_i entries must be numbered Contributions classified only as Components, Systems, or Rules"
+fi
+
+exit 0

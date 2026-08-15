@@ -1,0 +1,25 @@
+evolve(<scope>): X_t[<before>] -> X_t+1[<after>]
+
+X_t:
+- <authoritative repository state before this commit>
+
+C_i:
+- C1 [Components]: <state/schema/data contribution, or unchanged invariant>
+- C2 [Systems]: <behavior/observation/contribution-producer change, or unchanged invariant>
+- C3 [Rules]: <composition/update/order/validation change, or unchanged invariant>
+
+⊗:
+- <how the Contributions compose, including order, priority, conflict, and invariants>
+
+Φ:
+- <the single atomic repository transition performed by this commit>
+
+X_t+1:
+- <authoritative repository state after this commit>
+
+Verification:
+- <evidence that X_t+1 is valid>
+
+# One commit is one complete state transition, not one directory or file type.
+# Scope names the evolved state subspace, for example: dig, battle, performance, git.
+# Delete every placeholder before committing.
