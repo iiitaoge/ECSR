@@ -1,0 +1,24 @@
+name: ECSR Conformance
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  conformance:
+    name: Protected ontology
+    runs-on: windows-latest
+    steps:
+      - name: Check out ECSR
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Verify architecture boundary
+        shell: pwsh
+        run: ./tests/Conformance.ps1

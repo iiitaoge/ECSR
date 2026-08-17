@@ -1,0 +1,4 @@
+# ECSR is a read-only framework dependency for the fishing collaboration.
+# Every framework change requires the repository owner's explicit review.
+* @iiitaoge
+/.github/CODEOWNERS @iiitaoge
