@@ -80,3 +80,8 @@ git clone --recurse-submodules <your-project-url>
 
 架构契约见 [ARCHITECTURE.md](ARCHITECTURE.md)，贡献代理必须先读 [AGENTS.md](AGENTS.md)。
 
+## 协作边界
+
+ECSR 是公开可读、受保护的框架依赖。应用功能应在独立仓库开发；捕鱼 Demo 的协作入口是 [`iiitaoge/ECSR-IceFishing-Demo`](https://github.com/iiitaoge/ECSR-IceFishing-Demo)。框架变更必须遵循 [CONTRIBUTING.md](CONTRIBUTING.md)，经过 `CODEOWNERS` 审核并通过架构检查后才能进入 `main`。
+
+本项目采用 [Apache License 2.0](LICENSE)。
