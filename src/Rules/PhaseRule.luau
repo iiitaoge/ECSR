@@ -2,7 +2,28 @@
 
 local PhaseRule = {}
 
-local function normalizeSystem(system, phaseName: string, seenSystems)
+export type System = {
+	name: string,
+	evaluate: any,
+}
+
+export type Definition = {
+	name: string,
+	systems: { System },
+	advanceTick: boolean?,
+}
+
+export type Phase = {
+	name: string,
+	systems: { System },
+	advanceTick: boolean,
+}
+
+export type Rule = {
+	phases: () -> { Phase },
+}
+
+local function normalizeSystem(system: System, phaseName: string, seenSystems: { [string]: boolean }): System
 	assert(type(system) == "table", string.format("Phase %s contains a non-System value", phaseName))
 	assert(type(system.name) == "string" and system.name ~= "", string.format("Phase %s has a System without a name", phaseName))
 	assert(type(system.evaluate) == "function", string.format("System %s has no evaluate(view, emit)", system.name))
@@ -16,11 +37,11 @@ end
 
 -- A Phase Rule is immutable law, not mutable world state. Every phase is one
 -- complete X -> Systems -> Compose -> State Update transition.
-function PhaseRule.new(definitions)
+function PhaseRule.new(definitions: { Definition }): Rule
 	assert(type(definitions) == "table" and #definitions > 0, "PhaseRule needs at least one phase")
-	local seenPhases = {}
-	local seenSystems = {}
-	local phases = {}
+	local seenPhases: { [string]: boolean } = {}
+	local seenSystems: { [string]: boolean } = {}
+	local phases: { Phase } = {}
 
 	for phaseIndex, definition in ipairs(definitions) do
 		assert(type(definition) == "table", string.format("Phase %d is not a Rule definition", phaseIndex))
@@ -51,4 +72,3 @@ function PhaseRule.new(definitions)
 end
 
 return table.freeze(PhaseRule)
-

@@ -7,10 +7,10 @@ local StableRule = require(ECSR.Rules.StableRule)
 -- Generic lifecycle only: interpreting an Observation belongs to application
 -- Systems. This final System merely removes observations after every interested
 -- System has read the same snapshot.
-return function(C)
+return function(C: any)
 	return {
 		name = "ObservationCleanupSystem",
-		evaluate = function(view, emit)
+		evaluate = function(view: any, emit: (any) -> ())
 			for _, row in ipairs(view:query(C.Observation)) do
 				local observationEntity = row[1]
 				emit(Contribution.transaction("ObservationCleanupSystem", {
@@ -24,4 +24,3 @@ return function(C)
 		end,
 	}
 end
-

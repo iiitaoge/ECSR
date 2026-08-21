@@ -4,14 +4,18 @@ local StableRule = require(script.Parent.StableRule)
 
 local CompositionRule = {}
 
+export type Rule = {
+	compose: (contributions: { any }) -> { any },
+}
+
 -- Pure configurable ⊗: registered Rules receive only Contributions and never X_t.
-function CompositionRule.new(contributionRules, transactionRule)
+function CompositionRule.new(contributionRules: { any }, transactionRule: any): Rule
 	assert(type(contributionRules) == "table", "CompositionRule needs Contribution Rules")
 	assert(type(transactionRule) == "table" and transactionRule.kind == "Transaction", "CompositionRule needs a Transaction terminal Rule")
 	assert(type(transactionRule.resolve) == "function", "Transaction Rule needs resolve")
 
-	local orderedRules = {}
-	local byKind = {}
+	local orderedRules: { any } = {}
+	local byKind: { [string]: any } = {}
 	for ruleIndex, rule in ipairs(contributionRules) do
 		assert(type(rule) == "table", string.format("Contribution Rule %d is invalid", ruleIndex))
 		assert(type(rule.kind) == "string" and rule.kind ~= "" and rule.kind ~= "Transaction", "Contribution Rule needs a unique non-Transaction kind")
@@ -22,12 +26,12 @@ function CompositionRule.new(contributionRules, transactionRule)
 	end
 	table.freeze(orderedRules)
 
-	local function compose(contributions)
+	local function compose(contributions: { any }): { any }
 		assert(type(contributions) == "table", "CompositionRule.compose needs Contributions")
 		local orderedContributions = table.clone(contributions)
 		StableRule.sort(orderedContributions)
-		local buckets = {}
-		local transactions = {}
+		local buckets: { [string]: { any } } = {}
+		local transactions: { any } = {}
 
 		for _, contribution in ipairs(orderedContributions) do
 			assert(type(contribution) == "table" and type(contribution.kind) == "string", "System emitted an invalid Contribution")

@@ -1,12 +1,18 @@
 --!strict
 
 local ReadRule = require(script.Parent.ReadRule)
-local StateUpdateRule = require(script.Parent.StateUpdateRule)
+local StateUpdateRule: any = require(script.Parent.StateUpdateRule)
 
-local EvolutionRule = {}
+local EvolutionRule: any = {}
 EvolutionRule.__index = EvolutionRule
 
-function EvolutionRule.new(matter, components, configuration)
+export type Evolution = {
+	view: (self: Evolution) -> ReadRule.View,
+	observe: (self: Evolution, kind: string, payload: any) -> number,
+	step: (self: Evolution) -> any,
+}
+
+function EvolutionRule.new(matter: any, components: any, configuration: any): Evolution
 	assert(configuration.phaseRule ~= nil and type(configuration.phaseRule.phases) == "function", "EvolutionRule requires a PhaseRule")
 	assert(configuration.compositionRule ~= nil and type(configuration.compositionRule.compose) == "function", "EvolutionRule requires a CompositionRule")
 	local world = matter.World.new()
@@ -19,26 +25,34 @@ function EvolutionRule.new(matter, components, configuration)
 		_phaseRule = configuration.phaseRule,
 		_compositionRule = configuration.compositionRule,
 		_running = false,
-	}, EvolutionRule)
+	}, EvolutionRule) :: any
 end
 
-function EvolutionRule:view()
+function EvolutionRule:view(): ReadRule.View
 	return ReadRule.new(self._world)
 end
 
-function EvolutionRule:observe(kind: string, payload): number
+function EvolutionRule:observe(kind: string, payload: any): number
 	assert(not self._running, "An external observation cannot interrupt an evolution")
 	return self._updater:observe(kind, payload)
 end
 
-function EvolutionRule:_evolvePhase(phase)
-	local readMetrics = {}
+function EvolutionRule:_evolvePhase(phase: any): any
+	local readMetrics: ReadRule.Metrics = {
+		gets = 0,
+		contains = 0,
+		sizes = 0,
+		queries = 0,
+		queryDriverRows = 0,
+		queryRows = 0,
+		queryComponentReads = 0,
+	}
 	local view = ReadRule.new(self._world, readMetrics)
-	local contributions = {}
+	local contributions: { any } = {}
 	local sequence = 0
 	local phaseStarted = os.clock()
-	local systemProfiles = {}
-	local function emit(contribution)
+	local systemProfiles: { [string]: any } = {}
+	local function emit(contribution: any)
 		assert(type(contribution) == "table", "System emitted a non-Contribution value")
 		sequence += 1
 		local normalized = table.clone(contribution)
@@ -96,11 +110,11 @@ function EvolutionRule:_evolvePhase(phase)
 	}
 end
 
-function EvolutionRule:step()
+function EvolutionRule:step(): any
 	assert(not self._running, "Evolution Rule cannot be re-entered")
 	self._running = true
 	local started = os.clock()
-	local profile = {
+	local profile: any = {
 		phases = {},
 		systems = {},
 		contributions = 0,

@@ -3,23 +3,23 @@
 local ROOT_ENTITY = 1
 local REMOVED = table.freeze({})
 
-local StateUpdateRule = {}
+local StateUpdateRule: any = {}
 StateUpdateRule.__index = StateUpdateRule
 
-local function snapshot(value, seen)
+local function snapshot(value: any, seen: { [any]: any }?): any
 	if type(value) ~= "table" then return value end
 	if getmetatable(value) ~= nil then return value end
-	seen = seen or {}
-	if seen[value] ~= nil then return seen[value] end
-	local result = {}
-	seen[value] = result
+	local visited: { [any]: any } = seen or {}
+	if visited[value] ~= nil then return visited[value] end
+	local result: { [any]: any } = {}
+	visited[value] = result
 	for key, item in pairs(value) do
-		result[snapshot(key, seen)] = snapshot(item, seen)
+		result[snapshot(key, visited)] = snapshot(item, visited)
 	end
 	return table.freeze(result)
 end
 
-local function sortedInsert(values, value)
+local function sortedInsert(values: { any }, value: any)
 	for _, existing in ipairs(values) do
 		if existing == value then return end
 	end
@@ -32,11 +32,11 @@ local function sortedInsert(values, value)
 	end)
 end
 
-function StateUpdateRule.new(world, components)
+function StateUpdateRule.new(world: any, components: any): any
 	for _, name in ipairs({ "StateRoot", "EvolutionTrace", "ObservationJournal", "Observation" }) do
 		assert(components[name] ~= nil, string.format("ECSR protocol Component %s is missing", name))
 	end
-	local knownComponentTypes = {}
+	local knownComponentTypes: { [any]: boolean } = {}
 	for _, componentType in pairs(components) do
 		knownComponentTypes[componentType] = true
 	end
@@ -47,14 +47,14 @@ function StateUpdateRule.new(world, components)
 	}, StateUpdateRule)
 end
 
-function StateUpdateRule:_assertComponentType(componentType, context: string)
+function StateUpdateRule:_assertComponentType(componentType: any, context: string)
 	assert(self.knownComponentTypes[componentType] == true, string.format("%s references an unknown Component type", context))
 	assert(componentType ~= self.components.StateRoot, "StateRoot is owned exclusively by StateUpdateRule")
 end
 
-function StateUpdateRule:_validateInstances(componentInstances, context: string, allowStateRoot: boolean?)
+function StateUpdateRule:_validateInstances(componentInstances: { any }, context: string, allowStateRoot: boolean?)
 	assert(type(componentInstances) == "table" and #componentInstances > 0, string.format("%s needs Component instances", context))
-	local seen = {}
+	local seen: { [any]: boolean } = {}
 	for index, componentInstance in ipairs(componentInstances) do
 		local componentType = getmetatable(componentInstance)
 		assert(self.knownComponentTypes[componentType] == true, string.format("%s Component %d is not registered", context, index))
@@ -66,7 +66,7 @@ function StateUpdateRule:_validateInstances(componentInstances, context: string,
 	end
 end
 
-function StateUpdateRule:initialize(initial)
+function StateUpdateRule:initialize(initial: any)
 	assert(type(initial) == "table", "Initial world must be Component data")
 	local initialEntities = initial.entities or {}
 	local rootComponents = {
@@ -89,8 +89,8 @@ function StateUpdateRule:initialize(initial)
 	self.world:optimizeQueries()
 end
 
-local function traceRecord(resolved)
-	local effectKinds = {}
+local function traceRecord(resolved: any): any
+	local effectKinds: { string } = {}
 	for _, effect in ipairs(resolved.effects or {}) do
 		table.insert(effectKinds, effect.kind)
 	end
@@ -106,21 +106,21 @@ end
 
 -- Preflight simulates every effect against an overlay. No Matter write occurs
 -- until all targets, Components, tokens and sequential dependencies are valid.
-function StateUpdateRule:_preflight(resolvedContributions)
+function StateUpdateRule:_preflight(resolvedContributions: { any }): ({ any }, { [string]: any }, number)
 	assert(type(resolvedContributions) == "table", "State Update needs resolved Contributions")
-	local root = assert(self.world:get(ROOT_ENTITY, self.components.StateRoot), "StateRoot Component is missing")
+	local root: any = assert(self.world:get(ROOT_ENTITY, self.components.StateRoot), "StateRoot Component is missing")
 	local nextEntityId = root.nextEntityId
-	local tokens = {}
-	local alive = {}
-	local overlay = {}
-	local prepared = {}
+	local tokens: { [string]: any } = {}
+	local alive: { [number]: boolean } = {}
+	local overlay: { [number]: any } = {}
+	local prepared: { any } = {}
 
 	local function isAlive(entityId: number): boolean
 		if alive[entityId] ~= nil then return alive[entityId] end
 		return self.world:contains(entityId)
 	end
 
-	local function setComponent(entityId: number, componentType, value)
+	local function setComponent(entityId: number, componentType: any, value: any)
 		local entityOverlay = overlay[entityId]
 		if entityOverlay == nil then
 			entityOverlay = {}
@@ -129,7 +129,7 @@ function StateUpdateRule:_preflight(resolvedContributions)
 		entityOverlay[componentType] = value
 	end
 
-	local function getComponent(entityId: number, componentType)
+	local function getComponent(entityId: number, componentType: any): any
 		local entityOverlay = overlay[entityId]
 		if entityOverlay ~= nil and entityOverlay[componentType] ~= nil then
 			local value = entityOverlay[componentType]
@@ -138,7 +138,7 @@ function StateUpdateRule:_preflight(resolvedContributions)
 		return self.world:get(entityId, componentType)
 	end
 
-	local function resolveEntity(effect): number
+	local function resolveEntity(effect: any): number
 		if effect.entityToken ~= nil then
 			local tokenEntity = tokens[effect.entityToken]
 			assert(tokenEntity ~= nil, string.format("Unknown State Update entity token %s", tostring(effect.entityToken)))
@@ -148,7 +148,7 @@ function StateUpdateRule:_preflight(resolvedContributions)
 		return effect.entity
 	end
 
-	local function resolveValue(effect)
+	local function resolveValue(effect: any): any
 		if effect.valueToken ~= nil then
 			local tokenValue = tokens[effect.valueToken]
 			assert(tokenValue ~= nil, string.format("Unknown State Update value token %s", tostring(effect.valueToken)))
@@ -238,7 +238,7 @@ function StateUpdateRule:_preflight(resolvedContributions)
 	return prepared, tokens, nextEntityId
 end
 
-function StateUpdateRule:apply(resolvedContributions, phaseName: string, advanceTick: boolean, optimizeStorage: boolean?)
+function StateUpdateRule:apply(resolvedContributions: { any }, phaseName: string, advanceTick: boolean, optimizeStorage: boolean?): (any, any, { [string]: any })
 	local prepared, tokens, nextEntityId = self:_preflight(resolvedContributions)
 	local stats = {
 		effects = #prepared,
@@ -250,7 +250,7 @@ function StateUpdateRule:apply(resolvedContributions, phaseName: string, advance
 		traceEntriesCloned = 0,
 		traceEntriesShifted = 0,
 	}
-	local records = {}
+	local records: { any } = {}
 
 	-- All fallible semantic validation is complete. This is the sole commit path.
 	for _, effect in ipairs(prepared) do
@@ -277,7 +277,7 @@ function StateUpdateRule:apply(resolvedContributions, phaseName: string, advance
 		end
 	end
 
-	local root = assert(self.world:get(ROOT_ENTITY, self.components.StateRoot), "StateRoot Component is missing after State Update")
+	local root: any = assert(self.world:get(ROOT_ENTITY, self.components.StateRoot), "StateRoot Component is missing after State Update")
 	local nextTick = if advanceTick then root.tick + 1 else root.tick
 	if nextEntityId ~= root.nextEntityId or nextTick ~= root.tick then
 		self.world:insert(ROOT_ENTITY, root:patch({ nextEntityId = nextEntityId, tick = nextTick }))
@@ -291,13 +291,13 @@ function StateUpdateRule:apply(resolvedContributions, phaseName: string, advance
 	return stats, { phase = phaseName, resolved = records }, tokens
 end
 
-function StateUpdateRule:observe(kind: string, payload): number
+function StateUpdateRule:observe(kind: string, payload: any): number
 	assert(type(kind) == "string" and kind ~= "", "Observation kind must be a non-empty string")
 	local journal = self.world:get(ROOT_ENTITY, self.components.ObservationJournal)
 	local sequence = if journal ~= nil then journal.nextSequence else 1
 	local maxEntries = if journal ~= nil then journal.maxEntries or 128 else 128
-	local entries = table.clone(if journal ~= nil then journal.entries else {})
-	local root = assert(self.world:get(ROOT_ENTITY, self.components.StateRoot), "StateRoot Component is missing")
+	local entries: { any } = table.clone(if journal ~= nil then journal.entries else {})
+	local root: any = assert(self.world:get(ROOT_ENTITY, self.components.StateRoot), "StateRoot Component is missing")
 	local frozenPayload = snapshot(payload or {})
 	table.insert(entries, table.freeze({
 		sequence = sequence,
@@ -308,6 +308,18 @@ function StateUpdateRule:observe(kind: string, payload): number
 	while #entries > maxEntries do table.remove(entries, 1) end
 
 	local token = "observation:" .. tostring(sequence)
+	local observationEffects: { any } = {
+		{ kind = "Insert", entity = ROOT_ENTITY, components = {
+			self.components.ObservationJournal({
+				nextSequence = sequence + 1,
+				entries = entries,
+				maxEntries = maxEntries,
+			}),
+		} },
+		{ kind = "Spawn", token = token, components = {
+			self.components.Observation({ sequence = sequence, kind = kind, payload = frozenPayload }),
+		} },
+	}
 	local _, _, tokens = self:apply({
 		{
 			kind = "Resolved",
@@ -316,28 +328,17 @@ function StateUpdateRule:observe(kind: string, payload): number
 			accepted = true,
 			conflict = false,
 			claims = {},
-			effects = {
-				{ kind = "Insert", entity = ROOT_ENTITY, components = {
-					self.components.ObservationJournal({
-						nextSequence = sequence + 1,
-						entries = entries,
-						maxEntries = maxEntries,
-					}),
-				} },
-				{ kind = "Spawn", token = token, components = {
-					self.components.Observation({ sequence = sequence, kind = kind, payload = frozenPayload }),
-				} },
-			},
+			effects = observationEffects,
 		},
 	}, "observation", false, false)
 	return assert(tokens[token], "Observation Entity was not allocated")
 end
 
-function StateUpdateRule:appendTrace(phases)
+function StateUpdateRule:appendTrace(phases: { any }): any
 	local oldTrace = self.world:get(ROOT_ENTITY, self.components.EvolutionTrace)
-	local entries = table.clone(if oldTrace ~= nil then oldTrace.entries else {})
+	local entries: { any } = table.clone(if oldTrace ~= nil then oldTrace.entries else {})
 	local cloned = #entries
-	local root = assert(self.world:get(ROOT_ENTITY, self.components.StateRoot), "StateRoot Component is missing")
+	local root: any = assert(self.world:get(ROOT_ENTITY, self.components.StateRoot), "StateRoot Component is missing")
 	table.insert(entries, { tick = root.tick, phases = phases })
 	local maxEntries = if oldTrace ~= nil then oldTrace.maxEntries or 64 else 64
 	local shifted = 0

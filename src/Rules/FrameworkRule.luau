@@ -1,22 +1,34 @@
 --!strict
 
 local CompositionRule = require(script.Parent.CompositionRule)
-local EvolutionRule = require(script.Parent.EvolutionRule)
+local EvolutionRule: any = require(script.Parent.EvolutionRule)
 local PhaseRule = require(script.Parent.PhaseRule)
 local TransactionRule = require(script.Parent.TransactionRule)
 
 local FrameworkRule = {}
 
+export type Specification = {
+	initial: any,
+	phases: any?,
+	phaseRule: any?,
+	compositionRule: any?,
+	contributionRules: any?,
+	transactionRule: any?,
+}
+
+export type Evolution = EvolutionRule.Evolution
+
 -- The only public constructor for an ECSR world. Application Rules provide
 -- Components, Systems and Rule declarations; the framework closes all write,
 -- ordering and composition capabilities before execution starts.
-function FrameworkRule.new(matter, components, specification)
+function FrameworkRule.new(matter: any, components: any, specification: any): Evolution
 	assert(type(specification) == "table", "FrameworkRule needs an application Rule specification")
 	assert(type(specification.initial) == "table", "FrameworkRule needs initial Components")
 
 	local phaseRule = specification.phaseRule
 	if phaseRule == nil then
-		phaseRule = PhaseRule.new(assert(specification.phases, "FrameworkRule needs phase Rules"))
+		local phases = assert(specification.phases, "FrameworkRule needs phase Rules")
+		phaseRule = PhaseRule.new(phases)
 	end
 
 	local compositionRule = specification.compositionRule

@@ -5,7 +5,7 @@ local StableRule = require(script.Parent.StableRule)
 local TransactionRule = {}
 TransactionRule.kind = "Transaction"
 
-local function stableClaims(claims)
+local function stableClaims(claims: { any }?): { any }
 	local result = table.clone(claims or {})
 	table.sort(result, function(a, b)
 		return tostring(a) < tostring(b)
@@ -13,10 +13,10 @@ local function stableClaims(claims)
 	return result
 end
 
-function TransactionRule.resolve(transactions)
+function TransactionRule.resolve(transactions: { any }): { any }
 	StableRule.sort(transactions)
-	local claimed = {}
-	local resolved = {}
+	local claimed: { [any]: boolean } = {}
+	local resolved: { any } = {}
 
 	for _, transaction in ipairs(transactions) do
 		local claims = stableClaims(transaction.claims)

@@ -2,29 +2,46 @@
 
 local ReadRule = {}
 
-function ReadRule.new(world, metrics)
-	local view = {}
-	metrics = metrics or {}
-	metrics.gets = metrics.gets or 0
-	metrics.contains = metrics.contains or 0
-	metrics.sizes = metrics.sizes or 0
-	metrics.queries = metrics.queries or 0
-	metrics.queryDriverRows = metrics.queryDriverRows or 0
-	metrics.queryRows = metrics.queryRows or 0
-	metrics.queryComponentReads = metrics.queryComponentReads or 0
+export type Metrics = {
+	gets: number,
+	contains: number,
+	sizes: number,
+	queries: number,
+	queryDriverRows: number,
+	queryRows: number,
+	queryComponentReads: number,
+}
+
+export type View = {
+	get: (self: View, entityId: number, ...any) -> ...any,
+	contains: (self: View, entityId: number) -> boolean,
+	size: (self: View) -> number,
+	query: (self: View, ...any) -> { { any } },
+}
+
+function ReadRule.new(world: any, metrics: Metrics?): View
+	local view: any = {}
+	local activeMetrics: any = metrics or {}
+	activeMetrics.gets = activeMetrics.gets or 0
+	activeMetrics.contains = activeMetrics.contains or 0
+	activeMetrics.sizes = activeMetrics.sizes or 0
+	activeMetrics.queries = activeMetrics.queries or 0
+	activeMetrics.queryDriverRows = activeMetrics.queryDriverRows or 0
+	activeMetrics.queryRows = activeMetrics.queryRows or 0
+	activeMetrics.queryComponentReads = activeMetrics.queryComponentReads or 0
 
 	function view:get(entityId: number, ...)
-		metrics.gets += select("#", ...)
+		activeMetrics.gets += select("#", ...)
 		return world:get(entityId, ...)
 	end
 
 	function view:contains(entityId: number): boolean
-		metrics.contains += 1
+		activeMetrics.contains += 1
 		return world:contains(entityId)
 	end
 
 	function view:size(): number
-		metrics.sizes += 1
+		activeMetrics.sizes += 1
 		return world:size()
 	end
 
@@ -32,12 +49,12 @@ function ReadRule.new(world, metrics)
 	function view:query(...)
 		local componentTypes = table.pack(...)
 		assert(componentTypes.n > 0, "A System query needs at least one Component")
-		metrics.queries += 1
+		activeMetrics.queries += 1
 		local rows = {}
 
 		for entityId in world:query(componentTypes[1]) do
-			metrics.queryDriverRows += 1
-			metrics.queryComponentReads += componentTypes.n
+			activeMetrics.queryDriverRows += 1
+			activeMetrics.queryComponentReads += componentTypes.n
 			local values = table.pack(world:get(entityId, table.unpack(componentTypes, 1, componentTypes.n)))
 			local complete = true
 			for index = 1, componentTypes.n do
@@ -52,7 +69,7 @@ function ReadRule.new(world, metrics)
 					table.insert(row, values[index])
 				end
 				table.insert(rows, row)
-				metrics.queryRows += 1
+				activeMetrics.queryRows += 1
 			end
 		end
 
